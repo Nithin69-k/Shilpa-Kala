@@ -1,0 +1,63 @@
+{
+  "entities": {
+    "products": {
+      "title": "Product",
+      "description": "An artisan's handcrafted product",
+      "type": "object",
+      "properties": {
+        "artisanId": { "type": "string" },
+        "name": { "type": "string" },
+        "price": { "type": "number" },
+        "material": { "type": "string" },
+        "description": { "type": "string" },
+        "category": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "artisanName": { "type": "string" },
+        "craftOrigin": { "type": "string" },
+        "contactDetails": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["artisanId", "name", "price", "imageUrl", "createdAt"]
+    },
+    "users": {
+        "title": "User",
+        "description": "Artisan user profile",
+        "type": "object",
+        "properties": {
+            "displayName": { "type": "string" },
+            "email": { "type": "string" },
+            "photoURL": { "type": "string" },
+            "storeName": { "type": "string" },
+            "location": { "type": "string" }
+        }
+    },
+    "reviews": {
+      "title": "Review",
+      "description": "Customer rating and comment for a product",
+      "type": "object",
+      "properties": {
+        "productId": { "type": "string" },
+        "rating": { "type": "number" },
+        "comment": { "type": "string" },
+        "customerName": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["productId", "rating", "customerName", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/products/{productId}": {
+      "schema": "products",
+      "description": "Collection of artisan products"
+    },
+    "/products/{productId}/reviews/{reviewId}": {
+      "schema": "reviews",
+      "description": "Subcollection of product reviews"
+    },
+    "/users/{userId}": {
+        "schema": "users",
+        "description": "User profile data"
+    }
+  }
+}

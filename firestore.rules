@@ -1,0 +1,109 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Phase 3: Primitive Definitions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isVerifiedOwner(userId) {
+      return isVerified() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Entity Validations (Pillar 2)
+    function validateProductSchema(data) {
+      let requiredFields = ['name', 'price', 'description', 'imageUrl', 'artisanId', 'artisanName', 'createdAt', 'updatedAt'];
+      return data.keys().hasAll(requiredFields) &&
+             data.keys().size() <= 60 && 
+             data.name is string &&
+             data.price is number &&
+             data.imageUrl is string && 
+             data.imageUrl.size() <= 1500000;
+    }
+
+    function isValidUser(data) {
+      let requiredFields = ['displayName', 'email', 'createdAt'];
+      return data.keys().hasAll(requiredFields) &&
+             data.keys().size() <= 20 &&
+             data.email == request.auth.token.email &&
+             (data.displayName is string || data.displayName == null) &&
+             data.createdAt == request.time;
+    }
+
+    function isValidReview(data) {
+      let requiredFields = ['productId', 'rating', 'customerName', 'createdAt'];
+      return data.keys().hasAll(requiredFields) &&
+             data.productId is string &&
+             data.rating is number && data.rating >= 1 && data.rating <= 5 &&
+             data.customerName is string && data.customerName.size() <= 100 &&
+             (!data.keys().contains('comment') || (data.comment is string && data.comment.size() <= 1000));
+    }
+
+    // 1. Users Collection
+    match /users/{userId} {
+      allow get, list: if isSignedIn();
+      allow create: if isOwner(userId) && isValidUser(incoming());
+      allow update: if isSignedIn() && 
+                      incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL', 'storeName', 'location', 'phone', 'updatedAt']);
+    }
+
+    // 2. Products Collection
+    match /products/{productId} {
+      // Secure List Queries
+      allow list, get: if true; // Public view
+      
+      allow create: if isSignedIn() && 
+                    validateProductSchema(incoming()) &&
+                    incoming().artisanId == request.auth.uid &&
+                    incoming().createdAt == request.time &&
+                    incoming().updatedAt == request.time;
+      
+      allow update: if isSignedIn() && (
+                      (isOwner(existing().artisanId) && 
+                       // Relaxed validation on update to avoid bricking old docs
+                       incoming().updatedAt is timestamp &&
+                       incoming().artisanId == existing().artisanId &&
+                       incoming().createdAt == existing().createdAt)
+                      ||
+                      (incoming().diff(existing()).affectedKeys().hasOnly(['views', 'inboxCount']) && 
+                       (!incoming().keys().contains('views') || incoming().views == existing().views + 1) &&
+                       (!incoming().keys().contains('inboxCount') || incoming().inboxCount == existing().inboxCount + 1))
+                    );
+      
+      allow delete: if isOwner(existing().artisanId);
+
+      // 3. Reviews Subcollection
+      match /reviews/{reviewId} {
+        allow read: if true;
+        allow create: if isValidReview(incoming()) && 
+                      incoming().createdAt == request.time &&
+                      incoming().productId == productId;
+      }
+    }
+  }
+}

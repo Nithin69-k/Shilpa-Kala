@@ -1,0 +1,14 @@
+{
+  "name": "Shilpa-Kala",
+  "description": "Digital Portfolio Assistant for Rural Artisans. Professional branding and AI-powered product photography.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "AI-powered photo enhancement",
+    "Multilingual support (Kannada, Hindi, Tamil, Telugu, English)",
+    "Digital Storefronts",
+    "Smart Branding Overlays"
+  ]
+}
