@@ -55,3 +55,7 @@ Artisans can save their branded photos to a dedicated "Shilpa-Kala" album in the
 View app in AI Studio: https://ai.studio/apps/d730323e-f767-46bd-b996-8502b4849131
 
 ## Run Locally
+
+Deployed using Vercel: https://shilpa-kala.vercel.app
+
+
